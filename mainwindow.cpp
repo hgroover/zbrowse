@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "columnids.h"
+#include "versioninfo.h"
 
 #include <QStringList>
 #include <QTableWidget>
@@ -15,11 +16,14 @@
 #include <QTimer>
 #include <QAudioOutput>
 
+// Define static tags for dependency checking
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setWindowTitle( windowTitle() + " v" ZBROWSE_VER );
     m_linkChooser = new DlgLinkChooser( this );
     m_linkChooser->showNormal();
     setFocus();

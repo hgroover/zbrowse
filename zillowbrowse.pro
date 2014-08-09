@@ -29,7 +29,8 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     dlglinkchooser.h \
     sqldefs.h \
-    columnids.h
+    columnids.h \
+    versioninfo.h
 
 FORMS    += mainwindow.ui \
     dlglinkchooser.ui
