@@ -59,7 +59,7 @@
         <item>
          <widget class="QTableWidget" name="tblData">
           <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
+           <enum>QAbstractItemView::ExtendedSelection</enum>
           </property>
           <property name="sortingEnabled">
            <bool>true</bool>
@@ -128,6 +128,39 @@ Plano, TX
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnDelete">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>Delete selected records from database</string>
+            </property>
+            <property name="text">
+             <string>Delete</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnSaveXls">
+            <property name="toolTip">
+             <string>Save as Excel spreadsheet</string>
+            </property>
+            <property name="text">
+             <string>Save XLS...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnColumns">
+            <property name="toolTip">
+             <string>Add, edit or delete list of user-defined columns</string>
+            </property>
+            <property name="text">
+             <string>Columns...</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>

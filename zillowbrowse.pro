@@ -12,6 +12,8 @@ QT       += sql
 QT       += printsupport
 QT       += multimedia
 
+include( ../QtXlsxWriter/src/xlsx/qtxlsx.pri )
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = zillowbrowse
@@ -24,13 +26,20 @@ SOURCES += main.cpp\
     sqlfns.cpp \
     parsefns.cpp \
     saverestore.cpp \
-    audio.cpp
+    audio.cpp \
+    dlgusercolumns.cpp
 
 HEADERS  += mainwindow.h \
     dlglinkchooser.h \
     sqldefs.h \
     columnids.h \
-    versioninfo.h
+    versioninfo.h \
+    dlgusercolumns.h
 
 FORMS    += mainwindow.ui \
-    dlglinkchooser.ui
+    dlglinkchooser.ui \
+    dlgusercolumns.ui
+
+OTHER_FILES += \
+    README.md \
+    changelog.txt

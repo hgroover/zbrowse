@@ -8,6 +8,7 @@
 #include <QAudioOutput>
 #include <QAudioFormat>
 #include <QFile>
+#include <QVariant>
 
 #include "dlglinkchooser.h"
 
@@ -22,6 +23,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+   static QStringList columnHeaderList();
 
 private slots:
     void on_btnAddUrl_clicked();
@@ -47,6 +50,16 @@ private slots:
     void on_tblData_clicked(const QModelIndex &index);
 
     void on_tblData_cellDoubleClicked(int row, int column);
+
+    void on_pushButton_clicked();
+
+    void on_btnColumns_clicked();
+
+    void on_tblData_cellChanged(int row, int column);
+
+    void on_btnSaveXls_clicked();
+
+    void on_btnDelete_clicked();
 
 public slots:
     void fetchUrl( QString url, int tableIndex, bool fetch );
@@ -74,6 +87,9 @@ private:
     QMap<int,int> m_zpidToRow; // Zillow id to row index
     QMap<int,int> m_dbidToRow; // Database ID to row index
 
+    // Column widths in table widget set while running
+    QList<QVariant> m_columnWidths;
+
     // Map user columns (user1, user2, etc) to user-defined names and collation values. If not present, not used.
     QMap<QString,QString> m_userColMap;
     QMap<QString,int> m_userColCollation;
@@ -82,6 +98,9 @@ private:
     int m_loadBusy;
     // Page processing pending - non-zero when onTimerIdle() is already scheduled to process page
     int m_pageProcessingPending;
+
+    // Non-zero when loading spreadsheet
+    int m_sheetLoadBusy;
 
     // SQLite database connection
     QString m_dbPath;
@@ -97,7 +116,9 @@ private:
     bool dbAssertTables();
     bool dbInsertVersion();
     int loadSpreadsheet(QString orderBy);
+protected slots:
     int loadUsercols();
+private:
     bool updateDbFromTable( int row, QString zzpid, double avgSchool, int latitude, int longitude );
     QString sortableLotSize( QString s );
     //-- end sqlfns.cpp ---
@@ -112,10 +133,8 @@ private:
     //-- Defined in audio.cpp --
     QByteArray pcmWaveform( int rateHz, int durationMs, int freqHz, int amplitudeStart, int amplitudeEnd ); // Generate 8-bit PCM waveform (simple sine wave)
     void startPlay( QByteArray& pcm );
-private slots:
+protected slots:
     void handleStateChanged(QAudio::State newState);
-    void on_pushButton_clicked();
-
 private:
     //-- end audio.cpp --
 

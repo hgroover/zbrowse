@@ -498,7 +498,7 @@ void MainWindow::setDistanceColumn(int rowId)
                 double c = 2 * atan2( sqrt(a), sqrt(1-a) );
                 double dist = 6371 * c; // Distance in km
                 double distMiles = dist * 0.621371;
-                ui->tblData->setItem(rowId, COL_DISTANCE, new QTableWidgetItem(QString().sprintf("%5.1fm", distMiles)) );
+                ui->tblData->setItem(rowId, COL_DISTANCE, new QTableWidgetItem(QString().sprintf("%5.1f", distMiles)) );
                 return;
             }
         }

@@ -34,6 +34,7 @@ bool MainWindow::dbAvailable()
     if (!dbVersionOk())
     {
         // Reopen database which was closed in dbReset(), called from dbVersionOk() in the failing case
+        logMsg("Updating database", 0);
         bool openOK = m_db.open();
         if (!openOK) return false;
         // Create missing tables
@@ -112,10 +113,10 @@ bool MainWindow::dbVersionOk()
         //    break;
         }
     } // Upgrade required
-    else
-    {
-        logMsg(QString().sprintf("Current database version %d found", m_dbVer), 3);
-    }
+    //else
+    //{
+    //    logMsg(QString().sprintf("Current database version %d found", m_dbVer), 3);
+    //}
     return true;
 }
 
@@ -192,11 +193,14 @@ int MainWindow::loadSpreadsheet(QString orderBy)
         qDebug() << "Cannot load: db not available";
         return -1;
     }
+    m_sheetLoadBusy = 1;
+    loadUsercols();
     QSqlQuery q(m_db);
     QString sQuery("SELECT * FROM zbr_property ORDER BY " + orderBy);
     if (!q.exec(sQuery))
     {
         qDebug() << "Query failed for load:" << q.lastError().text();
+        m_sheetLoadBusy = 0;
         return -1;
     }
     int loaded = 0;
@@ -206,7 +210,7 @@ int MainWindow::loadSpreadsheet(QString orderBy)
     // Add to spreadsheet
     int numRows = q.size();
     ui->tblData->setRowCount(numRows);
-    qDebug() << "Got num rows:" << numRows;
+    qDebug() << "Got num rows:" << numRows << " cols:" << ui->tblData->columnCount();
     assertTableHeaders();
     int rowIndex = 0;
     while (q.next())
@@ -264,9 +268,16 @@ int MainWindow::loadSpreadsheet(QString orderBy)
             ui->tblData->setItem(rowIndex, COL_GEO, new QTableWidgetItem( QString().sprintf("%.6f,%.6f", sLat.toDouble() / 1000000.0, sLong.toDouble() / 1000000.0 ) ));
             setDistanceColumn(rowIndex);
         }
-        // FIXME display user columns
+        // Display user columns
+        int col;
+        for (col = COL_START_USER; col < ui->tblData->columnCount(); col++)
+        {
+            QString name(QString().sprintf("user%d", col - COL_START_USER + 1));
+            ui->tblData->setItem(rowIndex, col, new QTableWidgetItem( q.value(name).toString() ));
+        }
         rowIndex++;
     }
+    m_sheetLoadBusy = 0;
     return loaded;
 }
 
@@ -279,6 +290,7 @@ int MainWindow::loadUsercols()
     m_userColCollation.clear();
     if (q.exec("SELECT name, user_name, collation FROM zbr_usercols ORDER BY name"))
     {
+        QStringList lstH(columnHeaderList());
         while (q.next())
         {
             QString nameLabel(q.value("name").toString());
@@ -287,9 +299,18 @@ int MainWindow::loadUsercols()
             if (nameLabel.isEmpty() || name.isEmpty()) continue;
             m_userColMap[nameLabel] = name;
             m_userColCollation[nameLabel] = nameCollation;
+            lstH << name;
             loaded++;
         }
+        if (ui->tblData->columnCount() < COL_START_USER + loaded)
+        {
+            qDebug() << "Adding additional columns:" << loaded;
+            ui->tblData->setColumnCount(COL_START_USER + loaded);
+        }
+        else if (loaded > 0) qDebug() << "Additional user cols:" << loaded;
+        ui->tblData->setHorizontalHeaderLabels(lstH);
     }
+    else qDebug() << "COlumn query failed:" << q.lastError();
     return loaded;
 }
 

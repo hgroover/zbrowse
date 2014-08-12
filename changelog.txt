@@ -1,0 +1,10 @@
+Change log for zillowbrowse
+
+0.9.1 12-Aug-2014
+Work-in-progress - still in early development. Features added include
+* Database record delete
+* User-defined column entry and persistence
+* xlsx export (project now requires clone of https://github.com/dbzhang800/QtXlsxWriter.git in sibling directory)
+* Added column width persistence
+* Other minor fixes
+* Added beep on load completion
