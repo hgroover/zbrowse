@@ -58,6 +58,9 @@
         </item>
         <item>
          <widget class="QTableWidget" name="tblData">
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::EditKeyPressed</set>
+          </property>
           <property name="selectionMode">
            <enum>QAbstractItemView::ExtendedSelection</enum>
           </property>
@@ -196,6 +199,19 @@ Plano, TX
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="btnWeight">
+        <property name="toolTip">
+         <string>Show or hide weighted ranking dialog
+This allows you to assign importance
+to various columns and see
+the immediate effect.</string>
+        </property>
+        <property name="text">
+         <string>Weighted rank...</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">

@@ -11,6 +11,7 @@
 #include <QVariant>
 
 #include "dlglinkchooser.h"
+#include "dlgweight.h"
 
 namespace Ui {
 class MainWindow;
@@ -61,11 +62,14 @@ private slots:
 
     void on_btnDelete_clicked();
 
+    void on_btnWeight_clicked();
+
 public slots:
     void fetchUrl( QString url, int tableIndex, bool fetch );
     void saveRestore( bool isLoading );
     // Log with specified priority level (-1 = error, 0 = critical, 7 = debug)
     void logMsg( QString msg, int priority = 3 );
+    void setTableCell( int row, int col, QString value );
 
     // --- in parsefns.cpp ---
     void processWebView();
@@ -77,15 +81,22 @@ signals:
     void startPage();
     void endPage();
     void article(QString articleBody);
+    void addColumn(QString dbColumn, QString displayColumn);
+    void cellChanged( int row, int col, QString value );
+    void closing();
 
 private:
     Ui::MainWindow *ui;
     DlgLinkChooser *m_linkChooser;
+    DlgWeight *m_dlgWeight;
 
     // Rebuilt whenever reading from database
     QMap<QString,int> m_urlToRow; // full URL (e.g. http://www.zillow.com/details/...) to origin:0 row index
     QMap<int,int> m_zpidToRow; // Zillow id to row index
     QMap<int,int> m_dbidToRow; // Database ID to row index
+
+    // True if close already requested
+    bool m_closeRequested;
 
     // Column widths in table widget set while running
     QList<QVariant> m_columnWidths;
@@ -93,6 +104,9 @@ private:
     // Map user columns (user1, user2, etc) to user-defined names and collation values. If not present, not used.
     QMap<QString,QString> m_userColMap;
     QMap<QString,int> m_userColCollation;
+
+    // Queued entries to fetch (by table row index) - used only if fetching more than one entry
+    QList<int> m_fetchQueue;
 
     // Non-zero when load is in progress
     int m_loadBusy;
@@ -118,6 +132,7 @@ private:
     int loadSpreadsheet(QString orderBy);
 protected slots:
     int loadUsercols();
+    void processQueue();
 private:
     bool updateDbFromTable( int row, QString zzpid, double avgSchool, int latitude, int longitude );
     QString sortableLotSize( QString s );
@@ -135,6 +150,7 @@ private:
     void startPlay( QByteArray& pcm );
 protected slots:
     void handleStateChanged(QAudio::State newState);
+    void testLinkHandler(QString cmd);
 private:
     //-- end audio.cpp --
 

@@ -9,6 +9,7 @@ DlgLinkChooser::DlgLinkChooser(QWidget *parent) :
     ui(new Ui::DlgLinkChooser)
 {
     ui->setupUi(this);
+    ui->textBrowser->setText("<a href=\"testbeep\">Beep</a>");
 }
 
 DlgLinkChooser::~DlgLinkChooser()
@@ -18,8 +19,16 @@ DlgLinkChooser::~DlgLinkChooser()
 
 void DlgLinkChooser::on_textBrowser_anchorClicked(const QUrl &arg1)
 {
-    qDebug() << "Text browser:" << arg1;
-    emit fetchLink( arg1.toString(), -1, true );
+    QString sUrl(arg1.toString());
+    //qDebug() << "Text browser:" << arg1;
+    if (sUrl.startsWith("test"))
+    {
+        emit testLink( sUrl );
+    }
+    else
+    {
+        emit fetchLink( sUrl, -1, true );
+    }
 }
 
 void DlgLinkChooser::newPage()

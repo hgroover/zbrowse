@@ -36,6 +36,12 @@ void MainWindow::onIdleTimer()
         return;
     }
     int rowIndex = m_urlToRow[sUrl];
+    if (safeItemText(rowIndex, COL_URL) != sUrl)
+    {
+        logMsg( "Warning: mismatch, expected " + sUrl + " got " + safeItemText(rowIndex, COL_URL), 0 );
+        m_pageProcessingPending = 0;
+        return;
+    }
     QWebPage *webWindow = ui->webView->page();
     if (webWindow == NULL)
     {
@@ -286,11 +292,12 @@ asyncLoader.load({"phaseType":"scroll","ajaxURL":"/AjaxRender.htm?encparams=7~13
     if (rxSchools.exactMatch(s))
     {
         QString s2( rxSchools.cap(1) );
-        QRegExp rxNearbyList(".*<li class=\"nearby-school assigned-school\">(.+)<\\/li>.*");
+        // Schools may not be asssigned. We can assume the assigned ones will come first
+        QRegExp rxNearbyList(".*<li class=\"nearby-school[^\"]*\">(.+)<\\/li>.*");
         if (rxNearbyList.exactMatch(s2))
         {
             // Split into multiple elements
-            QRegExp rxNearbyListSep("<\\/li>\\s*<li class=\"nearby-school assigned-school\">");
+            QRegExp rxNearbyListSep("<\\/li>\\s*<li class=\"nearby-school[^\"]*\">");
             QStringList aSchools( rxNearbyList.cap(1).split(rxNearbyListSep, QString::SkipEmptyParts ) );
             if (aSchools.length() > 0)
             {
@@ -361,6 +368,11 @@ asyncLoader.load({"phaseType":"scroll","ajaxURL":"/AjaxRender.htm?encparams=7~13
     }
     updateDbFromTable( rowIndex, rxZzpid.cap(1), avgSchool, dbLat, dbLong );
     m_pageProcessingPending = 0;
+    // More to fetch?
+    if (m_fetchQueue.isEmpty()) return;
+    qDebug() << "Triggering next load...";
+    startPlay(m_pcmBeep2);
+    QTimer::singleShot(1000, this, SLOT(processQueue()));
 }
 
 void MainWindow::processWebView()
@@ -498,10 +510,10 @@ void MainWindow::setDistanceColumn(int rowId)
                 double c = 2 * atan2( sqrt(a), sqrt(1-a) );
                 double dist = 6371 * c; // Distance in km
                 double distMiles = dist * 0.621371;
-                ui->tblData->setItem(rowId, COL_DISTANCE, new QTableWidgetItem(QString().sprintf("%5.1f", distMiles)) );
+                setTableCell(rowId, COL_DISTANCE, QString().sprintf("%5.1f", distMiles) );
                 return;
             }
         }
     }
-    ui->tblData->setItem(rowId, COL_DISTANCE, new QTableWidgetItem("?"));
+    setTableCell(rowId, COL_DISTANCE, "?" );
 }

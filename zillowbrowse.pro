@@ -27,18 +27,21 @@ SOURCES += main.cpp\
     parsefns.cpp \
     saverestore.cpp \
     audio.cpp \
-    dlgusercolumns.cpp
+    dlgusercolumns.cpp \
+    dlgweight.cpp
 
 HEADERS  += mainwindow.h \
     dlglinkchooser.h \
     sqldefs.h \
     columnids.h \
     versioninfo.h \
-    dlgusercolumns.h
+    dlgusercolumns.h \
+    dlgweight.h
 
 FORMS    += mainwindow.ui \
     dlglinkchooser.ui \
-    dlgusercolumns.ui
+    dlgusercolumns.ui \
+    dlgweight.ui
 
 OTHER_FILES += \
     README.md \

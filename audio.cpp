@@ -61,3 +61,9 @@ void MainWindow::startPlay( QByteArray& pcm )
     connect( m_audio, SIGNAL(stateChanged(QAudio::State)), this, SLOT(handleStateChanged(QAudio::State)) );
     m_audio->start(&m_audioData);
 }
+
+void MainWindow::testLinkHandler(QString cmd)
+{
+    qDebug() << "Test:" << cmd;
+    startPlay(m_pcmBeep2);
+}

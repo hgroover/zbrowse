@@ -23,6 +23,7 @@ public slots:
 
 signals:
     void fetchLink(QString url, int tableIndex, bool doFetch);
+    void testLink(QString link);
 
 private slots:
     void on_textBrowser_anchorClicked(const QUrl &arg1);

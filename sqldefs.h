@@ -9,10 +9,11 @@
 /* Database version history
  * Version  Notes
  *  1       First released version with version table (zbr_dbver)
+ *  2       Added weighting table
  */
 
 // Database version
-#define SQLITE_DATABASE_VERSION 1
+#define SQLITE_DATABASE_VERSION 2
 #define SQLITE_TABLEDEF_DBVER   "\
 CREATE TABLE IF NOT EXISTS zbr_dbver (\
     version INTEGER PRIMARY KEY\
@@ -55,6 +56,11 @@ CREATE TABLE IF NOT EXISTS zbr_property (\
 )\
 "
 
+// Property table fields corresponding to columns used for array initialization
+#define PROPERTY_TABLE_FIELDS "_nd_detail_url", "_nd_id", "lot_size", "year_built", "price", "bedrooms", "baths", "sqft", "zestimate", "schools", "hoa_fee", \
+    "_nd_address", "_nd_city", "_nd_county", "_nd_zip", "_nd_state", "_nd_geo", "_c_distance", "user1", "user2", "user3", "user4", "user5", \
+    "user6", "user7", "user8", "user9"
+
 // User column definitions
 #define SQLITE_TABLEDEF_USERCOLS    "\
 CREATE TABLE IF NOT EXISTS zbr_usercols (\
@@ -65,7 +71,15 @@ CREATE TABLE IF NOT EXISTS zbr_usercols (\
 )\
 "
 
+// Weighting definitions
+#define SQLITE_TABLEDEF_WEIGHTING   "\
+CREATE TABLE IF NOT EXISTS zbr_weighting (\
+    colname TEXT NOT NULL,\
+    transform INTEGER NOT NULL,\
+    weight REAL NOT NULL\
+)\
+"
 // All table defs to assert
-#define SQLITE_TABLEDEFS_ALL    SQLITE_TABLEDEF_DBVER, SQLITE_TABLEDEF_PROPERTY, SQLITE_TABLEDEF_USERCOLS
+#define SQLITE_TABLEDEFS_ALL    SQLITE_TABLEDEF_DBVER, SQLITE_TABLEDEF_PROPERTY, SQLITE_TABLEDEF_USERCOLS SQLITE_TABLEDEF_WEIGHTING
 
 #endif // SQLDEFS_H

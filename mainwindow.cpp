@@ -3,6 +3,7 @@
 #include "columnids.h"
 #include "versioninfo.h"
 #include "dlgusercolumns.h"
+#include "sqldefs.h"
 
 #include "xlsxdocument.h"
 #include "xlsxchart.h"
@@ -32,15 +33,20 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle( windowTitle() + " v" ZBROWSE_VER );
     m_linkChooser = new DlgLinkChooser( this );
     m_linkChooser->showNormal();
-    setFocus();
     saveRestore(true);
     m_loadBusy = 0;
     m_sheetLoadBusy = 0;
     m_pageProcessingPending = 0;
     connect( m_linkChooser, SIGNAL(fetchLink(QString,int,bool)), this, SLOT(fetchUrl(QString,int,bool)) );
+    connect( m_linkChooser, SIGNAL(testLink(QString)), this, SLOT(testLinkHandler(QString)) );
     connect( this, SIGNAL(startPage()), m_linkChooser, SLOT(newPage()) );
     connect( this, SIGNAL(article(QString)), m_linkChooser, SLOT(newEntry(QString)) );
     connect( this, SIGNAL(endPage()), m_linkChooser, SLOT(endEntry()) );
+    m_dlgWeight = new DlgWeight( this );
+    m_dlgWeight->hide();
+    connect( this, SIGNAL(addColumn(QString,QString)), m_dlgWeight, SLOT(addColumn(QString,QString)) );
+    connect( this, SIGNAL(cellChanged(int,int,QString)), m_dlgWeight, SLOT(cellChanged(int,int,QString)) );
+    connect( this, SIGNAL(closing()), m_dlgWeight, SLOT(close()) );
     if (!dbAvailable())
     {
         logMsg( "Failed to assert DB", 0 );
@@ -48,7 +54,10 @@ MainWindow::MainWindow(QWidget *parent) :
     else
     {
         loadSpreadsheet("price ASC");
+        m_dlgWeight->initDb( m_db );
+        m_dlgWeight->loadDbValues();
     }
+    setFocus();
     m_pcmBeep1 = pcmWaveform(8000, 250, 440, 100, 40);
     m_pcmBeep2 = pcmWaveform(8000, 250, 880, 120, 120);
     m_pcmWarn1 = pcmWaveform(8000, 100, 440, 50, 100) + pcmWaveform(8000, 400, 110, 120, 35);
@@ -56,16 +65,18 @@ MainWindow::MainWindow(QWidget *parent) :
     m_format.setChannelCount(1);
     m_format.setSampleSize(8);
     m_format.setCodec("audio/pcm");
-    m_format.setByteOrder(QAudioFormat::LittleEndian);
+    m_format.setByteOrder(QAudioFormat::BigEndian);
     m_format.setSampleType(QAudioFormat::SignedInt);
 
     m_audio = new QAudioOutput(m_format, this);
+    m_closeRequested = false;
 }
 
 MainWindow::~MainWindow()
 {
     delete m_linkChooser;
     m_linkChooser = NULL;
+    if (m_dlgWeight && !m_closeRequested) emit closing();
     delete ui;
 }
 
@@ -121,14 +132,19 @@ void MainWindow::on_btnFetch_clicked()
     // Get selected row
     QList<QTableWidgetItem*> lst(ui->tblData->selectedItems());
     if (lst.isEmpty()) return;
+    if (!m_fetchQueue.isEmpty())
+    {
+        logMsg( QString().sprintf("Clearing %d entries from fetch queue", m_fetchQueue.length() ) );
+        m_fetchQueue.clear();
+        return;
+    }
     int n;
     for (n = 0; n < lst.length(); n++)
     {
         if (lst[n]->column()!=COL_URL) continue;
-        fetchUrl(lst[n]->text(), lst[n]->row(), true);
-        qDebug() << "Got url from row" << lst[n]->row();
-        break;
+        m_fetchQueue.append(lst[n]->row());
     }
+    if (!m_fetchQueue.isEmpty()) processQueue();
 }
 
 void MainWindow::on_tblData_itemSelectionChanged()
@@ -180,6 +196,8 @@ void MainWindow::on_webView_loadStarted()
 void MainWindow::on_btnQuit_clicked()
 {
     saveRestore(false);
+    emit closing();
+    m_closeRequested = true;
     close();
 }
 
@@ -230,6 +248,15 @@ void MainWindow::assertTableHeaders()
         // FIXME add user columns to headings
         ui->tblData->setColumnCount(lstH.length());
         ui->tblData->setHorizontalHeaderLabels(lstH);
+        qDebug() << "Asserting table headers";
+        int n;
+        const char *_tblFields[] = { PROPERTY_TABLE_FIELDS };
+        for (n = 0; n < lstH.length(); n++)
+        {
+            if (!strncmp(_tblFields[n], "_nd", 3)) continue;
+            if (!strncmp(_tblFields[n], "user", 4)) continue; // add these later
+            emit addColumn( _tblFields[n], lstH[n] );
+        }
     }
     // Reset width first time only
     static bool firstTime = true;
@@ -321,6 +348,7 @@ void MainWindow::on_tblData_cellChanged(int row, int column)
     QString name(QString().sprintf("user%d", userIndex + 1));
     if (!dbAvailable()) return;
     int value = ui->tblData->item(row, column)->text().toInt();
+    emit cellChanged(row, column, ui->tblData->item(row,column)->text());
     int dbId = safeItemText(row, COL_DBID).toInt();
     if (!dbId) return;
     QSqlQuery q(m_db);
@@ -466,4 +494,33 @@ void MainWindow::on_btnDelete_clicked()
             }
         }
     }
+}
+
+void MainWindow::processQueue()
+{
+    // Anything queued?
+    if (m_fetchQueue.isEmpty()) return;
+    int row = m_fetchQueue.takeFirst();
+    QString sUrl(safeItemText(row, COL_URL));
+    if (sUrl.isEmpty()) return;
+    fetchUrl(sUrl, row, true);
+    //qDebug() << "Got url from row" << lst[n]->row();
+}
+
+void MainWindow::on_btnWeight_clicked()
+{
+    if (m_dlgWeight->isHidden())
+    {
+        m_dlgWeight->showNormal();
+    }
+    else
+    {
+        m_dlgWeight->hide();
+    }
+}
+
+void MainWindow::setTableCell( int row, int col, QString value )
+{
+    ui->tblData->setItem( row, col, new QTableWidgetItem(value) );
+    emit cellChanged(row, col, value);
 }

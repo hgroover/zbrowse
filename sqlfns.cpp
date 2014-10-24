@@ -70,7 +70,9 @@ bool MainWindow::dbSingleUpdate( unsigned int fromTo )
     QSqlQuery q(m_db);
     switch (fromTo)
     {
-    //case 0x0102:
+    case 0x0102:
+        if (!q.exec(SQLITE_TABLEDEF_WEIGHTING)) logMsg( "Failed: " + q.lastError().text(), -1 );
+        return true;
     //    if (!q.exec(SQLITE_ALTER_PROPERTY_ADDCOLS)) logMsg( "Failed: " + q.lastError().text(), -1 );
     //    return true;
     default:
@@ -104,13 +106,12 @@ bool MainWindow::dbVersionOk()
     if (m_dbVer < SQLITE_DATABASE_VERSION)
     {
         logMsg(QString().sprintf("Attempting upgrade from version %d to %d", m_dbVer, SQLITE_DATABASE_VERSION), 0);
-        // 8 and 9 equivalent to 7, added to force rev during development
         switch (m_dbVer * 0x100 + SQLITE_DATABASE_VERSION)
         {
-        //case 0x0102:
-        //  if (!dbSingleUpdate(0x0102)) break;
-        //    dbInsertVersion();
-        //    break;
+        case 0x0102:
+          if (!dbSingleUpdate(0x0102)) break;
+            dbInsertVersion();
+            break;
         }
     } // Upgrade required
     //else
@@ -245,27 +246,27 @@ int MainWindow::loadSpreadsheet(QString orderBy)
         m_dbidToRow[q.value("id").toInt()] = rowIndex;
         m_zpidToRow[q.value("zpid").toInt()] = rowIndex;
         m_urlToRow[sUrl] = rowIndex;
-        ui->tblData->setItem(rowIndex, COL_URL, new QTableWidgetItem( sUrl ));
-        ui->tblData->setItem(rowIndex, COL_DBID, new QTableWidgetItem( q.value("id").toString() ));
-        ui->tblData->setItem(rowIndex, COL_LOT, new QTableWidgetItem( sortableLotSize(q.value("lot_size").toString()) ) );
-        ui->tblData->setItem(rowIndex, COL_YEAR, new QTableWidgetItem( q.value("year_built").toString() ));
-        ui->tblData->setItem(rowIndex, COL_PRICE, new QTableWidgetItem( q.value("price").toString() ));
-        ui->tblData->setItem(rowIndex, COL_BR, new QTableWidgetItem( q.value("bedrooms").toString() ));
-        ui->tblData->setItem(rowIndex, COL_BA, new QTableWidgetItem( q.value("baths").toString() ));
-        ui->tblData->setItem(rowIndex, COL_SQFT, new QTableWidgetItem( q.value("sqft").toString() ));
-        ui->tblData->setItem(rowIndex, COL_ZESTIMATE, new QTableWidgetItem( q.value("zestimate").toString() ));
-        ui->tblData->setItem(rowIndex, COL_SCHOOLS, new QTableWidgetItem( q.value("schools").toString() ));
-        ui->tblData->setItem(rowIndex, COL_HOA, new QTableWidgetItem( q.value("hoa_fee").toString() ));
-        ui->tblData->setItem(rowIndex, COL_ADDRESS, new QTableWidgetItem( q.value("address").toString() ));
-        ui->tblData->setItem(rowIndex, COL_CITY, new QTableWidgetItem( q.value("city").toString() ));
-        ui->tblData->setItem(rowIndex, COL_COUNTY, new QTableWidgetItem( q.value("county").toString() ));
-        ui->tblData->setItem(rowIndex, COL_ZIP, new QTableWidgetItem( q.value("zip").toString() ));
-        ui->tblData->setItem(rowIndex, COL_STATE, new QTableWidgetItem( q.value("state").toString() ));
+        setTableCell(rowIndex, COL_URL, sUrl );
+        setTableCell(rowIndex, COL_DBID, q.value("id").toString() );
+        setTableCell(rowIndex, COL_LOT, sortableLotSize(q.value("lot_size").toString()) );
+        setTableCell(rowIndex, COL_YEAR, q.value("year_built").toString() );
+        setTableCell(rowIndex, COL_PRICE, q.value("price").toString() );
+        setTableCell(rowIndex, COL_BR, q.value("bedrooms").toString() );
+        setTableCell(rowIndex, COL_BA, q.value("baths").toString() );
+        setTableCell(rowIndex, COL_SQFT, q.value("sqft").toString() );
+        setTableCell(rowIndex, COL_ZESTIMATE, q.value("zestimate").toString() );
+        setTableCell(rowIndex, COL_SCHOOLS, q.value("schools").toString() );
+        setTableCell(rowIndex, COL_HOA, q.value("hoa_fee").toString() );
+        setTableCell(rowIndex, COL_ADDRESS, q.value("address").toString() );
+        setTableCell(rowIndex, COL_CITY, q.value("city").toString() );
+        setTableCell(rowIndex, COL_COUNTY, q.value("county").toString() );
+        setTableCell(rowIndex, COL_ZIP, q.value("zip").toString() );
+        setTableCell(rowIndex, COL_STATE, q.value("state").toString() );
         QString sLat(q.value("latitude").toString());
         QString sLong(q.value("longitude").toString());
         if (!sLat.isEmpty() && !sLong.isEmpty() && sLat.toInt() != 0)
         {
-            ui->tblData->setItem(rowIndex, COL_GEO, new QTableWidgetItem( QString().sprintf("%.6f,%.6f", sLat.toDouble() / 1000000.0, sLong.toDouble() / 1000000.0 ) ));
+            setTableCell(rowIndex, COL_GEO, QString().sprintf("%.6f,%.6f", sLat.toDouble() / 1000000.0, sLong.toDouble() / 1000000.0 ) );
             setDistanceColumn(rowIndex);
         }
         // Display user columns
@@ -273,7 +274,7 @@ int MainWindow::loadSpreadsheet(QString orderBy)
         for (col = COL_START_USER; col < ui->tblData->columnCount(); col++)
         {
             QString name(QString().sprintf("user%d", col - COL_START_USER + 1));
-            ui->tblData->setItem(rowIndex, col, new QTableWidgetItem( q.value(name).toString() ));
+            setTableCell(rowIndex, col, q.value(name).toString() );
         }
         rowIndex++;
     }
@@ -291,6 +292,16 @@ int MainWindow::loadUsercols()
     if (q.exec("SELECT name, user_name, collation FROM zbr_usercols ORDER BY name"))
     {
         QStringList lstH(columnHeaderList());
+        qDebug() << "Asserting table headers (loadUsercols)";
+        int n;
+        const char *_tblFields[] = { PROPERTY_TABLE_FIELDS };
+        for (n = 0; n < lstH.length(); n++)
+        {
+            if (!strncmp(_tblFields[n], "_nd", 3)) continue;
+            if (!strncmp(_tblFields[n], "user", 4)) continue; // add these later
+            emit addColumn( _tblFields[n], lstH[n] );
+            //m_dlgWeight->addColumn( _tblFields[n], lstH[n] );
+        }
         while (q.next())
         {
             QString nameLabel(q.value("name").toString());
@@ -299,6 +310,7 @@ int MainWindow::loadUsercols()
             if (nameLabel.isEmpty() || name.isEmpty()) continue;
             m_userColMap[nameLabel] = name;
             m_userColCollation[nameLabel] = nameCollation;
+            emit addColumn(nameLabel, name);
             lstH << name;
             loaded++;
         }
@@ -310,7 +322,7 @@ int MainWindow::loadUsercols()
         else if (loaded > 0) qDebug() << "Additional user cols:" << loaded;
         ui->tblData->setHorizontalHeaderLabels(lstH);
     }
-    else qDebug() << "COlumn query failed:" << q.lastError();
+    else qDebug() << "Column query failed:" << q.lastError();
     return loaded;
 }
 
@@ -372,7 +384,7 @@ bool MainWindow::updateDbFromTable( int row, QString zzpid, double avgSchool, in
     {
         id = q.lastInsertId().toInt();
         qDebug() << "Got new db ID:" << id << "for row" << row;
-        ui->tblData->setItem( row, COL_DBID, new QTableWidgetItem(QString().sprintf("%d",id)) );
+        setTableCell( row, COL_DBID, QString().sprintf("%d",id) );
         m_dbidToRow[id] = row;
         m_zpidToRow[zzpid.toInt()] = row;
     }
